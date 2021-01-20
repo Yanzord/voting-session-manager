@@ -1,6 +1,7 @@
 package com.github.votingsessionmanager.service;
 
 import com.github.votingsessionmanager.domain.Agenda;
+import com.github.votingsessionmanager.domain.AgendaStatus;
 import com.github.votingsessionmanager.exception.IdNotFoundException;
 import com.github.votingsessionmanager.repository.AgendaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ public class AgendaService {
     }
 
     public Agenda save(Agenda agenda) {
+        agenda.setStatus(AgendaStatus.NEW);
         return agendaRepository.save(agenda);
     }
 }

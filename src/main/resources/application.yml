@@ -7,3 +7,6 @@ spring:
 
 server:
   port: 8080
+
+cpf_validator:
+  url: https://user-info.herokuapp.com

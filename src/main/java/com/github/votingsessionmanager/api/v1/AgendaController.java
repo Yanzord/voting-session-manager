@@ -13,23 +13,23 @@ import java.util.List;
 @RequestMapping("/v1/agenda")
 public class AgendaController {
 
-    private AgendaService agendaService;
+    private AgendaService service;
 
     @Autowired
-    public AgendaController(AgendaService agendaService) {
-        this.agendaService = agendaService;
+    public AgendaController(AgendaService service) {
+        this.service = service;
     }
 
     @GetMapping
     @ResponseBody
     public List<Agenda> findAll() {
-        return agendaService.findAll();
+        return service.findAll();
     }
 
     @GetMapping("/{agendaId}")
     @ResponseBody
     public Agenda findById(@PathVariable String agendaId) {
-        return agendaService.findById(agendaId);
+        return service.findById(agendaId);
     }
 
     @PostMapping
@@ -37,6 +37,6 @@ public class AgendaController {
     @ResponseStatus(HttpStatus.CREATED)
     public Agenda save(@RequestBody Agenda agenda) {
         agenda.setStatus(AgendaStatus.NEW);
-        return agendaService.save(agenda);
+        return service.save(agenda);
     }
 }
