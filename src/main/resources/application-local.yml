@@ -3,7 +3,7 @@ spring:
     name: voting-session-manager
   data:
     mongodb:
-      uri: mongodb://mongodb/voting_session_db
+      uri: mongodb://127.0.0.1:27017/voting_session_db
 
 server:
   port: 8080
