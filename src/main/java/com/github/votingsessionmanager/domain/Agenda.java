@@ -5,8 +5,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document
 public class Agenda {
+
     @Id
     private String id;
+
     private String description;
     private String result;
     private AgendaStatus status;

@@ -1,9 +1,6 @@
 package com.github.votingsessionmanager.api.v1;
 
-import com.github.votingsessionmanager.exception.ClosedAgendaException;
-import com.github.votingsessionmanager.exception.IdNotFoundException;
-import com.github.votingsessionmanager.exception.OpenedSessionException;
-import com.github.votingsessionmanager.exception.RequiredAgendaIdException;
+import com.github.votingsessionmanager.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,7 +14,12 @@ public class ExceptionController {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler({ ClosedAgendaException.class, OpenedSessionException.class, RequiredAgendaIdException.class})
+    @ExceptionHandler({
+            ClosedAgendaException.class,
+            OpenedSessionException.class,
+            RequiredAgendaIdException.class,
+            InvalidVoteException.class,
+            SessionNotOpenedException.class })
     public ResponseEntity<String> handleBadRequest(RuntimeException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }

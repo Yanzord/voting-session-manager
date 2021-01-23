@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface SessionRepository extends MongoRepository<Session, String> {
     List<Session> findByAgendaId(String agendaId);
+    List<Session> findByAgendaIdAndStatus(String agendaId, String status);
 }

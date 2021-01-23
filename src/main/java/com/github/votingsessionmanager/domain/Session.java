@@ -1,5 +1,6 @@
 package com.github.votingsessionmanager.domain;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -7,7 +8,10 @@ import java.util.List;
 
 @Document
 public class Session {
+
+    @Id
     private String id;
+
     private String agendaId;
     private long duration;
     private LocalDateTime startDate;

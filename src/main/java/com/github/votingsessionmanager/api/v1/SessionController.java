@@ -1,6 +1,7 @@
 package com.github.votingsessionmanager.api.v1;
 
 import com.github.votingsessionmanager.domain.Session;
+import com.github.votingsessionmanager.domain.Vote;
 import com.github.votingsessionmanager.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -44,4 +45,9 @@ public class SessionController {
         return sessionService.createSession(session);
     }
 
+    @PostMapping("/vote/{agendaId}")
+    @ResponseBody
+    public Vote registerVote(@PathVariable String agendaId, @RequestBody Vote vote) {
+        return sessionService.registerVote(agendaId, vote);
+    }
 }
