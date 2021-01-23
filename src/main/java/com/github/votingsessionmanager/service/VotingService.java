@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.votingsessionmanager.domain.*;
 import com.github.votingsessionmanager.exception.*;
 import com.github.votingsessionmanager.feign.CPFValidator;
+import com.github.votingsessionmanager.repository.AgendaRepository;
 import com.github.votingsessionmanager.repository.SessionRepository;
 import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,34 +15,71 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
-public class SessionService {
+public class VotingService {
 
+    private AgendaRepository agendaRepository;
     private SessionRepository sessionRepository;
-    private AgendaService agendaService;
     private CPFValidator cpfValidator;
 
     @Autowired
-    public SessionService(SessionRepository sessionRepository, AgendaService agendaService, CPFValidator cpfValidator) {
+    public VotingService(AgendaRepository agendaRepository, SessionRepository sessionRepository, CPFValidator cpfValidator) {
+        this.agendaRepository = agendaRepository;
         this.sessionRepository = sessionRepository;
-        this.agendaService = agendaService;
         this.cpfValidator = cpfValidator;
     }
 
-    public List<Session> findAll() {
+    public List<Agenda> findAllAgendas() {
+        return agendaRepository.findAll();
+    }
+
+    public Agenda findAgendaById(String agendaId) {
+        return agendaRepository
+                .findById(agendaId)
+                .orElseThrow(IdNotFoundException::new);
+    }
+
+    public Agenda createAgenda(Agenda agenda) {
+        agenda.setStatus(AgendaStatus.OPENED);
+        return agendaRepository.save(agenda);
+    }
+
+    public Agenda closeAgenda(AgendaStatusDTO update, String agendaId) {
+        if(!update.getAgendaStatus().equals(AgendaStatus.CLOSED)) {
+            throw new AgendaStatusException("Invalid agenda status.");
+        }
+
+        Agenda agenda = findAgendaById(agendaId);
+
+        if(agenda.getStatus().equals(AgendaStatus.CLOSED)) {
+            throw new AgendaStatusException("Agenda is already CLOSED.");
+        }
+
+        agenda.setStatus(update.getAgendaStatus());
+        agenda.setResult(calculateResult(agenda));
+
+        agendaRepository.save(agenda);
+
+        findSessionsByAgendaId(agendaId)
+                .stream()
+                .map(this::updateSession);
+
+        return agenda;
+    }
+
+    public List<Session> findAllSessions() {
         return sessionRepository.findAll();
     }
 
-    public Session findById(String sessionId) {
+    public Session findSessionById(String sessionId) {
         return sessionRepository
                 .findById(sessionId)
                 .map(this::updateSession)
                 .orElseThrow(IdNotFoundException::new);
     }
 
-    public List<Session> findByAgendaId(String agendaId) {
+    public List<Session> findSessionsByAgendaId(String agendaId) {
         return sessionRepository.findByAgendaId(agendaId)
                 .stream()
                 .map(this::updateSession)
@@ -55,7 +93,7 @@ public class SessionService {
                 .map(this::updateSession)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
                 .findAny()
-                .ifPresent(a -> { throw new OpenedSessionException(); });
+                .ifPresent(a -> { throw new SessionStatusException("There's already an opened session for the given agenda."); });
 
         if (session.getDuration() == 0) {
             session.setDuration(1);
@@ -75,15 +113,15 @@ public class SessionService {
             throw new RequiredAgendaIdException();
         }
 
-        Agenda agenda = agendaService.findById(agendaId);
+        Agenda agenda = findAgendaById(agendaId);
 
         if (agenda.getStatus().equals(AgendaStatus.CLOSED)) {
-            throw new ClosedAgendaException();
+            throw new AgendaStatusException("Agenda is closed.");
         }
     }
 
     private Session updateSession(Session session) {
-        if (session.getEndDate().isBefore(LocalDateTime.now())) {
+        if (session.getEndDate().isBefore(LocalDateTime.now()) || findAgendaById(session.getAgendaId()).getStatus().equals(AgendaStatus.CLOSED)) {
             session.setStatus(SessionStatus.CLOSED);
             return sessionRepository.save(session);
         }
@@ -91,7 +129,7 @@ public class SessionService {
         return session;
     }
 
-    public Vote registerVote(String agendaId, Vote vote) {
+    public Vote registerVote(Vote vote, String agendaId) {
         validateAgenda(agendaId);
 
         Session session = sessionRepository.findByAgendaIdAndStatus(agendaId, SessionStatus.OPENED.toString())
@@ -99,7 +137,7 @@ public class SessionService {
                 .map(this::updateSession)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
                 .findAny()
-                .orElseThrow(SessionNotOpenedException::new);
+                .orElseThrow(() -> new SessionStatusException("There's no opened session for the given agenda."));
 
         List<Vote> votes = Optional.ofNullable(session.getVotes())
                 .orElse(new ArrayList<>());
@@ -125,5 +163,27 @@ public class SessionService {
         } catch (FeignException.NotFound e) {
             throw new InvalidVoteException("Invalid CPF.");
         }
+    }
+
+    private String calculateResult(Agenda agenda) {
+        List<Session> sessions = findSessionsByAgendaId(agenda.getId());
+
+        long totalYes = sessions.stream()
+                .map(session -> session.getVotes().stream()
+                        .filter(vote -> vote.getVoteOption().equals(VoteOption.SIM))
+                        .count())
+                .reduce(0L, Long::sum);
+
+        long totalNo = sessions.stream()
+                .map(session -> session.getVotes().stream()
+                    .filter(vote -> vote.getVoteOption().equals(VoteOption.NAO))
+                    .count())
+                .reduce(0L, Long::sum);
+
+        if (totalYes == totalNo) {
+            return "EMPATE";
+        }
+
+        return totalYes > totalNo ? VoteOption.SIM.toString() : VoteOption.NAO.toString();
     }
 }

@@ -15,11 +15,10 @@ public class ExceptionController {
     }
 
     @ExceptionHandler({
-            ClosedAgendaException.class,
-            OpenedSessionException.class,
+            AgendaStatusException.class,
+            SessionStatusException.class,
             RequiredAgendaIdException.class,
-            InvalidVoteException.class,
-            SessionNotOpenedException.class })
+            InvalidVoteException.class })
     public ResponseEntity<String> handleBadRequest(RuntimeException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
