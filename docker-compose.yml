@@ -3,11 +3,13 @@ services:
 
   mongodb:
     image: mongo:latest
+    container_name: mongodb
     ports:
       - 27017:27017
 
   voting-session-manager:
     image: voting-session-manager
+    container_name: voting-session-manager
     ports:
       - 8080:8080
     depends_on:
