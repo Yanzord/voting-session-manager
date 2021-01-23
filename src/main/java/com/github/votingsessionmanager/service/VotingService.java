@@ -41,6 +41,10 @@ public class VotingService {
     }
 
     public Agenda createAgenda(Agenda agenda) {
+        if(agenda.getDescription().isEmpty()) {
+            throw new RequiredFieldException("Agenda description is required.");
+        }
+
         agenda.setStatus(AgendaStatus.OPENED);
         return agendaRepository.save(agenda);
     }
@@ -168,7 +172,7 @@ public class VotingService {
 
     private void validateAgenda(String agendaId) {
         if (agendaId.isEmpty()) {
-            throw new RequiredAgendaIdException();
+            throw new RequiredFieldException("Agenda Id is required to open session.");
         }
 
         Agenda agenda = findAgendaById(agendaId);

@@ -27,7 +27,8 @@ dependencies {
             'org.springframework.data:spring-data-mongodb',
             'org.springframework.cloud:spring-cloud-starter-openfeign',
             'io.github.openfeign:feign-jackson:9.3.1',
-            'com.fasterxml.jackson.core:jackson-core:2.11.0'
+            'com.fasterxml.jackson.core:jackson-core:2.11.0',
+            'org.springdoc:springdoc-openapi-ui:1.5.2'
     ])
 
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
