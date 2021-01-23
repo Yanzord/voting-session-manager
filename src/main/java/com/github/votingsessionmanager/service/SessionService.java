@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -36,16 +37,22 @@ public class SessionService {
     public Session findById(String sessionId) {
         return sessionRepository
                 .findById(sessionId)
+                .map(this::updateSession)
                 .orElseThrow(IdNotFoundException::new);
     }
 
     public List<Session> findByAgendaId(String agendaId) {
-        return sessionRepository.findByAgendaId(agendaId);
+        return sessionRepository.findByAgendaId(agendaId)
+                .stream()
+                .map(this::updateSession)
+                .collect(Collectors.toList());
     }
 
     public Session createSession(Session session) {
         validateAgenda(session.getAgendaId());
-        getUpdatedSessions(session.getAgendaId())
+        sessionRepository.findByAgendaIdAndStatus(session.getAgendaId(), SessionStatus.OPENED.toString())
+                .stream()
+                .map(this::updateSession)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
                 .findAny()
                 .ifPresent(a -> { throw new OpenedSessionException(); });
@@ -75,26 +82,23 @@ public class SessionService {
         }
     }
 
-    private Stream<Session> getUpdatedSessions(String agendaId) {
-        return sessionRepository.findByAgendaIdAndStatus(agendaId, SessionStatus.OPENED.toString())
-                .stream()
-                .map(session -> {
-                    if (session.getEndDate().isBefore(LocalDateTime.now())) {
-                        session.setStatus(SessionStatus.CLOSED);
-                        return sessionRepository.save(session);
-                    }
+    private Session updateSession(Session session) {
+        if (session.getEndDate().isBefore(LocalDateTime.now())) {
+            session.setStatus(SessionStatus.CLOSED);
+            return sessionRepository.save(session);
+        }
 
-                    return session;
-                });
+        return session;
     }
-
 
     public Vote registerVote(String agendaId, Vote vote) {
         validateAgenda(agendaId);
 
-        Session session = getUpdatedSessions(agendaId)
+        Session session = sessionRepository.findByAgendaIdAndStatus(agendaId, SessionStatus.OPENED.toString())
+                .stream()
+                .map(this::updateSession)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
-                .findFirst()
+                .findAny()
                 .orElseThrow(SessionNotOpenedException::new);
 
         List<Vote> votes = Optional.ofNullable(session.getVotes())
