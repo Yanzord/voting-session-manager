@@ -108,27 +108,6 @@ public class VotingService {
         return sessionRepository.save(session);
     }
 
-    private void validateAgenda(String agendaId) {
-        if (agendaId.isEmpty()) {
-            throw new RequiredAgendaIdException();
-        }
-
-        Agenda agenda = findAgendaById(agendaId);
-
-        if (agenda.getStatus().equals(AgendaStatus.CLOSED)) {
-            throw new AgendaStatusException("Agenda is closed.");
-        }
-    }
-
-    private Session updateSession(Session session) {
-        if (session.getEndDate().isBefore(LocalDateTime.now()) || findAgendaById(session.getAgendaId()).getStatus().equals(AgendaStatus.CLOSED)) {
-            session.setStatus(SessionStatus.CLOSED);
-            return sessionRepository.save(session);
-        }
-
-        return session;
-    }
-
     public Vote registerVote(Vote vote, String agendaId) {
         validateAgenda(agendaId);
 
@@ -185,5 +164,26 @@ public class VotingService {
         }
 
         return totalYes > totalNo ? VoteOption.SIM.toString() : VoteOption.NAO.toString();
+    }
+
+    private void validateAgenda(String agendaId) {
+        if (agendaId.isEmpty()) {
+            throw new RequiredAgendaIdException();
+        }
+
+        Agenda agenda = findAgendaById(agendaId);
+
+        if (agenda.getStatus().equals(AgendaStatus.CLOSED)) {
+            throw new AgendaStatusException("Agenda is closed.");
+        }
+    }
+
+    private Session updateSession(Session session) {
+        if (session.getEndDate().isBefore(LocalDateTime.now()) || findAgendaById(session.getAgendaId()).getStatus().equals(AgendaStatus.CLOSED)) {
+            session.setStatus(SessionStatus.CLOSED);
+            return sessionRepository.save(session);
+        }
+
+        return session;
     }
 }
