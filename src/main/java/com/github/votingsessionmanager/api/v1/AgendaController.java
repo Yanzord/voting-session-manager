@@ -36,7 +36,6 @@ public class AgendaController {
     @ResponseBody
     @ResponseStatus(HttpStatus.CREATED)
     public Agenda save(@RequestBody Agenda agenda) {
-        agenda.setStatus(AgendaStatus.NEW);
         return service.save(agenda);
     }
 }

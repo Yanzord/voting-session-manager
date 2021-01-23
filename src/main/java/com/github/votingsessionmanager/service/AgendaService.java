@@ -30,7 +30,7 @@ public class AgendaService {
     }
 
     public Agenda save(Agenda agenda) {
-        agenda.setStatus(AgendaStatus.NEW);
+        agenda.setStatus(AgendaStatus.OPENED);
         return agendaRepository.save(agenda);
     }
 }

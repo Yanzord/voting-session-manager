@@ -31,6 +31,12 @@ public class SessionController {
         return sessionService.findById(sessionId);
     }
 
+    @GetMapping("/agenda/{agendaId}")
+    @ResponseBody
+    public List<Session> findByAgendaId(@PathVariable String agendaId) {
+        return sessionService.findByAgendaId(agendaId);
+    }
+
     @PostMapping
     @ResponseBody
     @ResponseStatus(HttpStatus.CREATED)
