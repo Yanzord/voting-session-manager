@@ -15,10 +15,9 @@ public class Agenda {
 
     public Agenda(){}
 
-    public Agenda(String id, String description, AgendaStatus status) {
+    public Agenda(String id, String description) {
         this.id = id;
         this.description = description;
-        this.status = status;
     }
 
     public String getId() {

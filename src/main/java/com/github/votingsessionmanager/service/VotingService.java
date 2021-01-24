@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -35,13 +36,17 @@ public class VotingService {
     }
 
     public Agenda findAgendaById(String agendaId) {
+        if (agendaId == null || agendaId.isEmpty()) {
+            throw new RequiredFieldException("Agenda Id is required.");
+        }
+
         return agendaRepository
                 .findById(agendaId)
                 .orElseThrow(IdNotFoundException::new);
     }
 
     public Agenda createAgenda(Agenda agenda) {
-        if(agenda.getDescription().isEmpty()) {
+        if(agenda.getDescription() == null || agenda.getDescription().isEmpty()) {
             throw new RequiredFieldException("Agenda description is required.");
         }
 
@@ -50,24 +55,19 @@ public class VotingService {
     }
 
     public Agenda closeAgenda(AgendaStatusDTO update, String agendaId) {
-        if(!update.getAgendaStatus().equals(AgendaStatus.CLOSED)) {
+        if(update.getAgendaStatus() == null || !update.getAgendaStatus().equals(AgendaStatus.CLOSED)) {
             throw new AgendaStatusException("Invalid agenda status.");
         }
 
         Agenda agenda = findAgendaById(agendaId);
-
-        if(agenda.getStatus().equals(AgendaStatus.CLOSED)) {
-            throw new AgendaStatusException("Agenda is already CLOSED.");
-        }
+        validateAgenda(agenda);
 
         agenda.setStatus(update.getAgendaStatus());
         agenda.setResult(calculateResult(agenda));
 
         agendaRepository.save(agenda);
 
-        findSessionsByAgendaId(agendaId)
-                .stream()
-                .map(this::updateSession);
+        findAndUpdateSessionsByAgendaId(agendaId);
 
         return agenda;
     }
@@ -76,14 +76,14 @@ public class VotingService {
         return sessionRepository.findAll();
     }
 
-    public Session findSessionById(String sessionId) {
+    public Session findAndUpdateSessionById(String sessionId) {
         return sessionRepository
                 .findById(sessionId)
                 .map(this::updateSession)
                 .orElseThrow(IdNotFoundException::new);
     }
 
-    public List<Session> findSessionsByAgendaId(String agendaId) {
+    public List<Session> findAndUpdateSessionsByAgendaId(String agendaId) {
         return sessionRepository.findByAgendaId(agendaId)
                 .stream()
                 .map(this::updateSession)
@@ -91,10 +91,9 @@ public class VotingService {
     }
 
     public Session createSession(Session session) {
-        validateAgenda(session.getAgendaId());
-        sessionRepository.findByAgendaIdAndStatus(session.getAgendaId(), SessionStatus.OPENED.toString())
+        validateAgenda(findAgendaById(session.getAgendaId()));
+        findAndUpdateSessionsByAgendaId(session.getAgendaId())
                 .stream()
-                .map(this::updateSession)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
                 .findAny()
                 .ifPresent(a -> { throw new SessionStatusException("There's already an opened session for the given agenda."); });
@@ -113,19 +112,23 @@ public class VotingService {
     }
 
     public Vote registerVote(Vote vote, String agendaId) {
-        validateAgenda(agendaId);
+        validateVote(vote);
+        validateAgenda(findAgendaById(agendaId));
 
-        Session session = sessionRepository.findByAgendaIdAndStatus(agendaId, SessionStatus.OPENED.toString())
+        Session session = findAndUpdateSessionsByAgendaId(agendaId)
                 .stream()
-                .map(this::updateSession)
+                .filter(Objects::nonNull)
                 .filter(s -> s.getStatus().equals(SessionStatus.OPENED))
                 .findAny()
                 .orElseThrow(() -> new SessionStatusException("There's no opened session for the given agenda."));
 
-        List<Vote> votes = Optional.ofNullable(session.getVotes())
-                .orElse(new ArrayList<>());
+        List<Vote> votes = Optional.ofNullable(session.getVotes()).orElse(new ArrayList<>());
 
-        if (votes.stream().anyMatch(v -> v.getMemberId().equals(vote.getMemberId()) || v.getMemberCPF().equals(vote.getMemberCPF()))) {
+        boolean isVoteAlreadyRegistered = votes
+                .stream()
+                .anyMatch(v -> v.getMemberId().equals(vote.getMemberId()) || v.getMemberCPF().equals(vote.getMemberCPF()));
+
+        if (isVoteAlreadyRegistered) {
             throw new InvalidVoteException("Member already voted.");
         }
 
@@ -148,19 +151,46 @@ public class VotingService {
         }
     }
 
-    private String calculateResult(Agenda agenda) {
-        List<Session> sessions = findSessionsByAgendaId(agenda.getId());
+    private void validateVote(Vote vote) {
+        if(vote.getVoteOption() == null) {
+            throw new RequiredFieldException("Vote option is required.");
+        }
+
+        if(!vote.getVoteOption().equals(VoteOption.SIM) && !vote.getVoteOption().equals(VoteOption.NAO)) {
+            throw new InvalidVoteException("Vote option must be SIM or NAO.");
+        }
+
+        if(vote.getMemberId() == null || vote.getMemberId().isEmpty()) {
+            throw new RequiredFieldException("Member ID is required.");
+        }
+
+        if(vote.getMemberCPF() == null || vote.getMemberCPF().isEmpty()) {
+            throw new RequiredFieldException("Member CPF is required.");
+        }
+    }
+
+    public String calculateResult(Agenda agenda) {
+        List<Session> sessions = findAndUpdateSessionsByAgendaId(agenda.getId());
+        System.out.println(sessions);
 
         long totalYes = sessions.stream()
-                .map(session -> session.getVotes().stream()
-                        .filter(vote -> vote.getVoteOption().equals(VoteOption.SIM))
-                        .count())
+                .map(session -> {
+                    List<Vote> votes = Optional.ofNullable(session.getVotes()).orElse(new ArrayList<>());
+
+                    return votes.stream()
+                            .filter(vote -> vote.getVoteOption().equals(VoteOption.SIM))
+                            .count();
+                })
                 .reduce(0L, Long::sum);
 
         long totalNo = sessions.stream()
-                .map(session -> session.getVotes().stream()
-                    .filter(vote -> vote.getVoteOption().equals(VoteOption.NAO))
-                    .count())
+                .map(session -> {
+                    List<Vote> votes = Optional.ofNullable(session.getVotes()).orElse(new ArrayList<>());
+
+                    return votes.stream()
+                            .filter(vote -> vote.getVoteOption().equals(VoteOption.NAO))
+                            .count();
+                })
                 .reduce(0L, Long::sum);
 
         if (totalYes == totalNo) {
@@ -170,20 +200,17 @@ public class VotingService {
         return totalYes > totalNo ? VoteOption.SIM.toString() : VoteOption.NAO.toString();
     }
 
-    private void validateAgenda(String agendaId) {
-        if (agendaId.isEmpty()) {
-            throw new RequiredFieldException("Agenda Id is required to open session.");
-        }
-
-        Agenda agenda = findAgendaById(agendaId);
-
+    private void validateAgenda(Agenda agenda) {
         if (agenda.getStatus().equals(AgendaStatus.CLOSED)) {
             throw new AgendaStatusException("Agenda is closed.");
         }
     }
 
     private Session updateSession(Session session) {
-        if (session.getEndDate().isBefore(LocalDateTime.now()) || findAgendaById(session.getAgendaId()).getStatus().equals(AgendaStatus.CLOSED)) {
+        boolean isSessionExpired = session.getEndDate().isBefore(LocalDateTime.now());
+        boolean isClosedAgenda = findAgendaById(session.getAgendaId()).getStatus().equals(AgendaStatus.CLOSED);
+
+        if ((isSessionExpired || isClosedAgenda) && session.getStatus().equals(SessionStatus.OPENED)) {
             session.setStatus(SessionStatus.CLOSED);
             return sessionRepository.save(session);
         }

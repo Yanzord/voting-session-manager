@@ -46,7 +46,7 @@ public class SessionController {
     @GetMapping("/{sessionId}")
     @ResponseBody
     public Session findById(@PathVariable String sessionId) {
-        return votingService.findSessionById(sessionId);
+        return votingService.findAndUpdateSessionById(sessionId);
     }
 
     @Operation(
@@ -60,7 +60,7 @@ public class SessionController {
     @GetMapping("/agenda/{agendaId}")
     @ResponseBody
     public List<Session> findByAgendaId(@PathVariable String agendaId) {
-        return votingService.findSessionsByAgendaId(agendaId);
+        return votingService.findAndUpdateSessionsByAgendaId(agendaId);
     }
 
     @Operation(

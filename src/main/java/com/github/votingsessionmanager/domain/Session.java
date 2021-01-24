@@ -21,12 +21,6 @@ public class Session {
 
     public Session() {}
 
-    public Session(String agendaId, long duration, LocalDateTime startDate) {
-        this.agendaId = agendaId;
-        this.duration = duration;
-        this.startDate = startDate;
-    }
-
     public Session(String id, String agendaId, long duration, SessionStatus status) {
         this.id = id;
         this.agendaId = agendaId;
@@ -34,9 +28,15 @@ public class Session {
         this.status = status;
     }
 
-    public Session(String agendaId, long duration) {
+    public Session(String id, String agendaId, long duration) {
+        this.id = id;
         this.agendaId = agendaId;
         this.duration = duration;
+    }
+
+    public Session(String id, String agendaId) {
+        this.id = id;
+        this.agendaId = agendaId;
     }
 
     public String getId() {

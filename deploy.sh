@@ -1,6 +1,6 @@
 #! /bin/bash -e
 
-./gradlew build
+./gradlew clean build
 
 docker build -t voting-session-manager:latest .
 
