@@ -151,24 +151,6 @@ public class VotingService {
         }
     }
 
-    private void validateVote(Vote vote) {
-        if(vote.getVoteOption() == null) {
-            throw new RequiredFieldException("Vote option is required.");
-        }
-
-        if(!vote.getVoteOption().equals(VoteOption.SIM) && !vote.getVoteOption().equals(VoteOption.NAO)) {
-            throw new InvalidVoteException("Vote option must be SIM or NAO.");
-        }
-
-        if(vote.getMemberId() == null || vote.getMemberId().isEmpty()) {
-            throw new RequiredFieldException("Member ID is required.");
-        }
-
-        if(vote.getMemberCPF() == null || vote.getMemberCPF().isEmpty()) {
-            throw new RequiredFieldException("Member CPF is required.");
-        }
-    }
-
     public String calculateResult(Agenda agenda) {
         List<Session> sessions = findAndUpdateSessionsByAgendaId(agenda.getId());
         System.out.println(sessions);
@@ -216,5 +198,23 @@ public class VotingService {
         }
 
         return session;
+    }
+
+    private void validateVote(Vote vote) {
+        if(vote.getVoteOption() == null) {
+            throw new RequiredFieldException("Vote option is required.");
+        }
+
+        if(!vote.getVoteOption().equals(VoteOption.SIM) && !vote.getVoteOption().equals(VoteOption.NAO)) {
+            throw new InvalidVoteException("Vote option must be SIM or NAO.");
+        }
+
+        if(vote.getMemberId() == null || vote.getMemberId().isEmpty()) {
+            throw new RequiredFieldException("Member ID is required.");
+        }
+
+        if(vote.getMemberCPF() == null || vote.getMemberCPF().isEmpty()) {
+            throw new RequiredFieldException("Member CPF is required.");
+        }
     }
 }
