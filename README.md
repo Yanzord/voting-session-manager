@@ -2,7 +2,11 @@
 
 This project was created for a technical challenge and its README is divided in the following sections:
 
-- [The Challenge](https://github.com/Yanzord/voting-app/blob/master/README.md#the-challenge)
+- [The Challenge](https://github.com/Yanzord/voting-session-manager/blob/master/README.md#the-challenge)
+- [About It](https://github.com/Yanzord/voting-session-manager/blob/master/README.md#about-it)
+- [Getting Started](https://github.com/Yanzord/voting-session-manager/blob/master/README.md#getting-started)
+- [Documentation](https://github.com/Yanzord/voting-session-manager/blob/master/README.md#documentation)
+- [Future Improvements](https://github.com/Yanzord/voting-session-manager/blob/master/README.md#future-improvements)
 
 ## The Challenge
 
@@ -40,3 +44,43 @@ Imagine that your application can be used in scenarios where there are hundreds 
 
 #### Bonus Task 4 - API Version
 How would you version an API for your application? What strategy to use?
+
+## About It
+
+The API code is pretty straightforward, it uses SpringBoot as its core framework, MongoDB for data persistence, Netflix Feign for 
+external requests, Swagger for documentation and Docker for containerization.
+I choose a relational approach for the relationship between the documents in the database, mainly to avoid data duplication and desync. 
+As for the API versioning, it is done by URI path.
+Currently the test coverage is about 86% of the lines.
+
+## Getting Started
+
+To run this project you'll need [Docker](https://docs.docker.com/desktop/) and [Docker Compose](https://docs.docker.com/compose/install/).
+
+Clone this repo to your PC:
+
+    git clone https://github.com/Yanzord/voting-session-manager.git
+
+If you're using an unix OS with bash as a shell interpreter you should navigate to the project root folder and execute the following scripts to deploy and destroy the application environment:
+
+    bash deploy.sh
+    bash destroy.sh
+
+If you can't execute the scripts you'll need a mongodb service running locally, then from the project root folder execute:
+
+    ./gradlew build
+    java -jar -Dspring.profiles.active=local build/libs/voting-session-manager-1.0-SNAPSHOT.war
+
+## Documentation
+
+Documentation is provided by Swagger. Get the application up and running and access the link bellow:
+
+http://localhost:8080/swagger-ui.html
+
+## Future Improvements
+
+- Convert to a reactive approach;
+- Performance tests;
+- Improve test coverage by testing the app web layer;
+- Implement fallbacks;
+- Implement messaging.
